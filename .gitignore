@@ -1,0 +1,4 @@
+*.pyc
+**/*.pyc
+digDictionaryExtractor.egg-info/
+dist/
