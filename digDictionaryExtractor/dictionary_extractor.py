@@ -44,7 +44,7 @@ class DictionaryExtractor(Extractor):
                 map(lambda x: self.trie.get(x), 
                     ifilter(self.pre_filter, 
                         map(self.pre_process, iter(tokens))))))
-            return frozenset(extracts)
+            return list(frozenset(extracts))
 
         except:
             return list()
