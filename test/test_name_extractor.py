@@ -28,8 +28,7 @@ class TestNameExtractor(unittest.TestCase):
     	ep = ExtractorProcessor().set_input_fields('foo').set_output_field('names').set_extractor(e)
 
     	updated_doc = ep.extract(doc)
-    	print updated_doc
-    	self.assertEquals(updated_doc['names']['value'], frozenset(['barbara']))
+    	self.assertEquals(updated_doc['names']['value'], list(['barbara']))
 
 
 if __name__ == '__main__':
