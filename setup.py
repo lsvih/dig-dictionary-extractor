@@ -10,8 +10,8 @@ config = {
     'url': 'https://github.com/usc-isi-i2/dig-dictionary-extractor',
     'download_url': 'https://github.com/usc-isi-i2/dig-dictionary-extractor',
     'author_email': 'jasonslepicka@gmail.com',
-    'version': '0.1',
-    'install_requires': ['pygtrie'],
+    'version': '0.1.1',
+    'install_requires': ['pygtrie', 'digExtractor>=0.1.5'],
     # these are the subdirs of the current directory that we care about
     'packages': ['digDictionaryExtractor'],
     'scripts': [],

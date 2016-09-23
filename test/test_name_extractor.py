@@ -7,7 +7,8 @@ import unittest
 import json
 import pygtrie as trie
 from digDictionaryExtractor.populate_trie import populate_trie
-from digDictionaryExtractor.name_extractor import get_name_dictionary_extractor
+from digDictionaryExtractor.name_dictionary_extractor import get_name_dictionary_extractor
+from digExtractor.extractor_processor import ExtractorProcessor
 
 class TestNameExtractor(unittest.TestCase):
 
@@ -23,9 +24,12 @@ class TestNameExtractor(unittest.TestCase):
         self.assertFalse(isinstance(t.get('bar'), basestring))
         
         doc = {"foo": ['bar', 'Barbara']}
-    	name_dictionary_extract = get_name_dictionary_extractor(t)
-    	updated_doc = name_dictionary_extract(doc, 'names', ['foo'])
-    	self.assertEquals(updated_doc['names'], frozenset(['barbara']))
+    	e = get_name_dictionary_extractor(t)
+    	ep = ExtractorProcessor().set_input_fields('foo').set_output_field('names').set_extractor(e)
+
+    	updated_doc = ep.extract(doc)
+    	print updated_doc
+    	self.assertEquals(updated_doc['names']['value'], frozenset(['barbara']))
 
 
 if __name__ == '__main__':
