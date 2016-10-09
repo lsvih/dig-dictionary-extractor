@@ -14,7 +14,6 @@ from digExtractor.extractor import Extractor
 class DictionaryExtractor(Extractor):
 
     def __init__(self):
-        Extractor.__init__()
         self.renamed_input_fields = 'tokens'
         self.pre_process = lambda x: x
         self.pre_filter = lambda x: x
