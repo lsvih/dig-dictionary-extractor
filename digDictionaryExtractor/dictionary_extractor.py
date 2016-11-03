@@ -7,6 +7,8 @@ from itertools import ifilter
 from itertools import tee
 from itertools import chain
 from itertools import izip
+from itertools import imap
+from itertools import repeat
 from pygtrie import CharTrie
 from digExtractor.extractor import Extractor
 
@@ -14,6 +16,7 @@ from digExtractor.extractor import Extractor
 class DictionaryExtractor(Extractor):
 
     def __init__(self):
+        super(DictionaryExtractor, self).__init__()
         self.renamed_input_fields = 'tokens'
         self.pre_process = lambda x: x
         self.pre_filter = lambda x: x
@@ -52,14 +55,37 @@ class DictionaryExtractor(Extractor):
         self.joiner = joiner
         return self
 
+    def generate_ngrams_with_context_helper(self,
+                                            ngrams_iterable,
+                                            ngrams_length):
+        return imap(lambda ngrams_with_index: (ngrams_with_index[1],
+                                               ngrams_with_index[0],
+                                               ngrams_with_index[0] +
+                                               ngrams_length),
+                    enumerate(ngrams_iterable))
+
+    def generate_ngrams_with_context(self, tokens):
+        chained_ngrams_iterable = self.generate_ngrams_with_context_helper(iter(tokens), 1)
+        for n in range(2, self.ngrams + 1):
+            ngrams_iterable = tee(tokens, n)
+            for j in range(1, n):
+                for k in range(j):
+                    next(ngrams_iterable[j], None)
+            ngrams_iterable_with_context = self.generate_ngrams_with_context_helper(izip(*ngrams_iterable), n)
+            chained_ngrams_iterable = chain(chained_ngrams_iterable,
+                                            ngrams_iterable_with_context)
+
+        return chained_ngrams_iterable
+
     def generate_ngrams(self, tokens):
         chained_ngrams_iterable = iter(tokens)
-        for n in range(2, self.ngrams+1):
+        for n in range(2, self.ngrams + 1):
             ngrams_iterable = tee(iter(tokens), n)
             for j in range(1, n):
                 for k in range(j):
                     next(ngrams_iterable[j], None)
-            chained_ngrams_iterable = chain(chained_ngrams_iterable, izip(*ngrams_iterable))
+            chained_ngrams_iterable = chain(chained_ngrams_iterable,
+                                            izip(*ngrams_iterable))
 
         return chained_ngrams_iterable
 
@@ -70,22 +96,36 @@ class DictionaryExtractor(Extractor):
             combined = self.joiner.join(ngrams)
             return combined
 
-
     def extract(self, doc):
         try:
             extracts = list()
             tokens = doc['tokens']
 
-            ngrams_iterable = self.generate_ngrams(tokens)
+            if self.get_include_context():
+                ngrams_iterable = self.generate_ngrams_with_context(tokens)
+                extracts.extend(
+                    map(lambda ngrams_context: self.wrap_value_with_context(ngrams_context[0], 'tokens', ngrams_context[1], ngrams_context[2]),
+                        ifilter(lambda ngrams_context: self.post_filter(ngrams_context[0]),
+                                map(lambda ngrams_context: (self.trie.get(ngrams_context[0]), ngrams_context[1], ngrams_context[2]),
+                                            ifilter(lambda ngrams_context: self.pre_filter(ngrams_context[0]),
+                                                    map(lambda ngrams_context: (self.pre_process(ngrams_context[0]), ngrams_context[1], ngrams_context[2]),
+                                                        map(lambda ngrams_context: (self.combine_ngrams(ngrams_context[0]), ngrams_context[1], ngrams_context[2]), ngrams_iterable)))))))
 
-            extracts.extend(ifilter(self.post_filter,
-                                    map(self.trie.get,
-                                        ifilter(self.pre_filter,
-                                                map(self.pre_process,
-                                                    map(self.combine_ngrams, ngrams_iterable))))))
-            return list(frozenset(extracts))
+            else:
+                ngrams_iterable = self.generate_ngrams(tokens)
 
-        except:
+                extracts.extend(ifilter(self.post_filter,
+                                        map(self.trie.get,
+                                            ifilter(self.pre_filter,
+                                                    map(self.pre_process,
+                                                        map(self.combine_ngrams,
+                                                            ngrams_iterable))))))
+            return list(extracts)
+
+        except Exception as inst:
+            print "error operator"
+            print type(inst)
+            print inst
             return list()
 
     def get_metadata(self):
